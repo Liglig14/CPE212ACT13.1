@@ -1,0 +1,22 @@
+---
+- name: Install Chrony NTP
+  apt:
+    name: chrony
+    state: present
+  become: yes
+
+- name: Configure Chrony
+  lineinfile:
+    path: /etc/chrony/chrony.conf
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "server {{ ntp_server }} iburst"
+    - "allow 10.0.0.0/24"
+
+- name: Ensure Chrony service is started and enabled
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+  become: yes
