@@ -1,7 +1,7 @@
 ---
 - hosts: all
   become: true
-  pre_tasks:
+  pre_tasks: # The hashtags below signifies that those roles are already done installing
 
   - name: update repository index (Ubuntu)
     tags: always
@@ -13,4 +13,9 @@
 - hosts: UbuntuServers
   become: true
   roles:
-    - UbuntuNTP
+  #  - UbuntuNTP
+  #vars:
+  #  ntp_server: "pool.ntp.org"
+  #  - UbuntuOstack
+  #  - UbuntuSQL
+    - UbuntuMQ
