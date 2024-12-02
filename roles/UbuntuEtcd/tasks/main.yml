@@ -1,0 +1,67 @@
+---
+- name: Download etcd binary
+  get_url:
+    url: "https://github.com/etcd-io/etcd/releases/download/v3.5.1/etcd-v3.5.1-linux-amd64.tar.gz"  # Update to desired version
+    dest: "/tmp/etcd.tar.gz"
+
+- name: Extract etcd binary
+  unarchive:
+    src: "/tmp/etcd.tar.gz"
+    dest: "/tmp/"
+    remote_src: yes
+  become: true
+
+- name: Move etcd and etcdctl binaries to /usr/local/bin
+  command:
+    cmd: mv /tmp/etcd-v3.5.1-linux-amd64/{etcd,etcdctl} /usr/local/bin/
+    removes: /usr/local/bin/etcd
+  become: true
+
+- name: Create etcd user
+  user:
+    name: etcd
+    system: true
+    state: present
+  become: true
+
+- name: Create the data directory for etcd
+  file:
+    path: /var/lib/etcd
+    state: directory
+    owner: etcd
+    group: etcd
+    mode: '0755'
+  become: true
+
+- name: Create etcd systemd service file
+  copy:
+    dest: /etc/systemd/system/etcd.service
+    content: |
+      [Unit]
+      Description=etcd key-value store
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/local/bin/etcd
+      Restart=always
+      User=etcd
+      Environment=ETCD_DATA_DIR="/var/lib/etcd"
+      Environment=ETCD_LISTEN_PEER_URLS="http://localhost:2380"
+      Environment=ETCD_LISTEN_CLIENT_URLS="http://localhost:2379"
+      Environment=ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
+      LimitNOFILE=40000
+
+      [Install]
+      WantedBy=multi-user.target
+  become: true
+
+- name: Reload systemd to pick up the new service
+  command: systemctl daemon-reload
+  become: true
+
+- name: Start and enable etcd service
+  systemd:
+    name: etcd
+    state: started
+    enabled: yes
+  become: true
